@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/hospital1.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+   
+    <title>Hospital Management</title>
+    <script type="text/javascript">
+      // Flag to track if Google Translate script has loaded
+      window.googleTranslateScriptLoaded = false;
+      
+      // Direct translation function with improved error handling
+      function doGTranslate(lang_pair) {
+        if (!window.google || !window.google.translate) {
+          console.log('Google Translate not loaded yet');
+          // Store the language preference for later use
+          window.pendingLanguageChange = lang_pair;
+          return;
+        }
+        
+        try {
+          if (lang_pair.value) lang_pair = lang_pair.value;
+          if (lang_pair == '') return;
+          var lang = lang_pair.split('|')[1];
+          console.log('doGTranslate called with language:', lang);
+          
+          // Method 1: Traditional Google Translate widget
+          var teCombo = document.querySelector('.goog-te-combo');
+          if (teCombo) {
+            try {
+              teCombo.value = lang;
+              if (document.createEvent) {
+                var event = document.createEvent('HTMLEvents');
+                event.initEvent('change', true, true);
+                teCombo.dispatchEvent(event);
+              } else {
+                teCombo.fireEvent('onchange');
+              }
+              console.log('Used traditional Google Translate widget');
+              return;
+            } catch (e) {
+              console.error('Error with method 1:', e);
+              // Continue to next method
+            }
+          }
+          
+          // Method 2: Newer Google Translate API
+          var googleTranslateControl = document.querySelector('.VIpgJd-ZVi9od-xl07Ob-lTBxed');
+          if (googleTranslateControl) {
+            try {
+              // Click on the control to open the dropdown
+              googleTranslateControl.click();
+              console.log('Clicked on newer Google Translate control');
+              
+              // Short delay to allow dropdown to open
+              setTimeout(function() {
+                try {
+                  var languages = document.querySelectorAll('.VIpgJd-ZVi9od-vH1Gmf-ibnC6b');
+                  console.log('Found language options:', languages.length);
+                  
+                  var found = false;
+                  for (var i = 0; i < languages.length; i++) {
+                    if (languages[i].textContent.includes(lang === 'hi' ? 'Hindi' : 'English')) {
+                      languages[i].click();
+                      console.log('Selected language:', languages[i].textContent);
+                      found = true;
+                      break;
+                    }
+                  }
+                  
+                  if (!found) {
+                    console.log('Language option not found in dropdown');
+                  }
+                } catch (innerError) {
+                  console.error('Error selecting language from dropdown:', innerError);
+                }
+              }, 500);
+              return;
+            } catch (e) {
+              console.error('Error with method 2:', e);
+              // Continue to next method
+            }
+          }
+          
+          // Method 3: Direct DOM manipulation - used in some versions
+          try {
+            if (document.getElementById(':1.container')) {
+              var gt = document.getElementById(':1.container');
+              gt.contentDocument.getElementById(':1.restore').click();
+              gt.contentDocument.getElementById(':1.select').value = lang;
+              gt.contentDocument.getElementById(':1.select').dispatchEvent(new Event('change'));
+              gt.contentDocument.getElementById(':1.confirm').click();
+              console.log('Used contentDocument method');
+              return;
+            }
+          } catch (e) {
+            console.error('Error with method 3:', e);
+          }
+          
+          // Method 4: Fallback to reload with query param
+          try {
+            if (window.google.translate.TranslateElement) {
+              // Force a reload of the translate element
+              new window.google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi',
+                autoDisplay: false
+              }, 'google_translate_element');
+              
+              console.log('Forced reload of translate element');
+              
+              // Try method 1 again after a short delay
+              setTimeout(function() {
+                try {
+                  var teCombo = document.querySelector('.goog-te-combo');
+                  if (teCombo) {
+                    teCombo.value = lang;
+                    teCombo.dispatchEvent(new Event('change'));
+                  }
+                } catch (retryError) {
+                  console.error('Error in retry:', retryError);
+                }
+              }, 300);
+              return;
+            }
+          } catch (e) {
+            console.error('Error with method 4:', e);
+          }
+          
+          console.log('All Google Translate methods failed. Make sure it\'s properly initialized.');
+        } catch (outerError) {
+          console.error('Global error in doGTranslate:', outerError);
+        }
+      }
+      
+      // Standard Google Translate init function
+      function googleTranslateElementInit() {
+        if (!window.google || !window.google.translate) {
+          console.log('Google Translate API not loaded yet, will retry in 1 second');
+          setTimeout(googleTranslateElementInit, 1000);
+          return;
+        }
+        
+        try {
+          new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,hi',
+            layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
+            autoDisplay: false,
+            gaTrack: false
+          }, 'google_translate_element');
+          
+          console.log('Google Translate initialized');
+          window.googleTranslateScriptLoaded = true;
+          
+          // Apply any pending language change
+          if (window.pendingLanguageChange) {
+            setTimeout(function() {
+              doGTranslate(window.pendingLanguageChange);
+              window.pendingLanguageChange = null;
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error initializing Google Translate:', error);
+        }
+      }
+      
+      window.googleTranslateElementInit = googleTranslateElementInit;
+      window.doGTranslate = doGTranslate;
+      
+      // Fix page layout after translation (runs periodically with improved handling)
+      function fixTranslateLayout() {
+        try {
+          // Fix common Google Translate layout issues
+          if (document.body.classList.contains('translated-rtl') || document.body.classList.contains('translated-ltr')) {
+            // Reset body positioning caused by Google Translate
+            document.body.style.top = '0px';
+            document.body.style.position = 'static';
+            
+            // Fix iframe issues
+            var iframes = document.querySelectorAll('iframe.goog-te-menu-frame');
+            for (var i = 0; i < iframes.length; i++) {
+              iframes[i].style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+              iframes[i].style.borderRadius = '8px';
+            }
+            
+            // Fix positioning issues for fixed elements
+            var fixedElements = document.querySelectorAll('[style*="position: fixed"]');
+            for (var j = 0; j < fixedElements.length; j++) {
+              var el = fixedElements[j];
+              // Ensure fixed elements have proper z-index
+              if (el.style.zIndex < 900 && !el.classList.contains('goog-te-banner-frame')) {
+                el.style.zIndex = Math.max(parseInt(el.style.zIndex || 0), 900);
+              }
+            }
+            
+            // Remove Google Translate banner if it appears
+            var banner = document.querySelector('.goog-te-banner-frame');
+            if (banner) {
+              banner.style.display = 'none';
+            }
+          }
+        } catch (e) {
+          console.error('Error in fixTranslateLayout:', e);
+        }
+        
+        // Run this function periodically
+        setTimeout(fixTranslateLayout, 2000);
+      }
+      
+      // Start the layout fix function
+      setTimeout(fixTranslateLayout, 2000);
+    </script>
+    
+    <div id="google_translate_element" style="position: absolute; top: 10px; left: 10px; z-index: 1000; opacity: 0;"></div>
+    
+    <script type="text/javascript">
+      /* Improved deferred loading and DOM protection for Google Translate */
+      window.addEventListener('load', function() {
+        // Store original Node prototype methods to use as fallbacks
+        window.originalRemoveChild = Node.prototype.removeChild;
+        window.originalInsertBefore = Node.prototype.insertBefore;
+        window.originalAppendChild = Node.prototype.appendChild;
+        
+        // Override removeChild to prevent DOM errors
+        Node.prototype.removeChild = function(child) {
+          try {
+            if (child && this.contains(child)) {
+              return window.originalRemoveChild.call(this, child);
+            }
+            console.log('Protected removeChild - child not in parent');
+            return child;
+          } catch (e) {
+            console.log('Protected removeChild from error:', e.message);
+            return child;
+          }
+        };
+        
+        // Override insertBefore to prevent DOM errors
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          try {
+            if (referenceNode === null || (referenceNode && this.contains(referenceNode))) {
+              return window.originalInsertBefore.call(this, newNode, referenceNode);
+            }
+            // Fallback to appendChild if reference node isn't found
+            console.log('Protected insertBefore - using appendChild instead');
+            return this.appendChild(newNode);
+          } catch (e) {
+            console.log('Protected insertBefore from error:', e.message);
+            return this.appendChild(newNode);
+          }
+        };
+        
+        // Load the Google Translate script with a delay
+        setTimeout(function() {
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+          document.head.appendChild(script);
+        }, 3000); // Wait 3 seconds after page load to ensure React has fully rendered
+      });
+    </script>
+    
+    <style>
+      /* Enhanced styling for Google Translate elements */
+      .goog-te-banner-frame, .goog-te-balloon-frame { display: none !important; }
+      .goog-te-gadget-icon { display: none !important; }
+      .goog-te-gadget-simple { 
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 4px !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+        color: #333 !important;
+        box-shadow: none !important;
+      }
+      
+      /* Style for dropdown */
+      .goog-te-menu2 {
+        border-radius: 8px !important;
+        border: 1px solid #ddd !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+      }
+      
+      /* Style for language menu items */
+      .goog-te-menu2-item {
+        padding: 8px 10px !important;
+      }
+      
+      /* Style for dashboard integration */
+      #google_translate_element {
+        display: inline-block;
+        max-width: 100%;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        opacity: 0;
+        height: 0;
+        overflow: hidden;
+      }
+      
+      /* Fix for white space in translate selector */
+      .goog-te-combo {
+        padding: 5px !important;
+        border-radius: 4px !important;
+        border: 1px solid #ddd !important;
+        background-color: white !important;
+        width: 100%;
+      }
+      
+      /* Critical fixes for page layout */
+      body { 
+        top: 0 !important; 
+        position: static !important; 
+      }
+      
+      /* Hide Google Translate UI elements */
+      .skiptranslate { display: none !important; }
+      .goog-te-banner-frame { display: none !important; }
+      #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+      .goog-text-highlight { background: none !important; box-shadow: none !important; }
+      
+      /* Custom language buttons */
+      .lang-button {
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        margin: 0 4px;
+      }
+      
+      .lang-button:hover {
+        background-color: #e9ecef;
+      }
+      
+      .lang-button.active {
+        background-color: #4a5568;
+        color: white;
+        border-color: #4a5568;
+      }
+      
+      /* Fix for translated dropdown menus */
+      .translated-ltr .dropdown-menu, 
+      .translated-rtl .dropdown-menu {
+        position: absolute !important;
+      }
+      
+      /* Fix for translated elements with fixed positioning */
+      .translated-ltr [style*="position: fixed"],
+      .translated-rtl [style*="position: fixed"] {
+        z-index: 999 !important;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="root"></div>
+   
+  </body>
+</html>
