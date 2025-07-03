@@ -277,11 +277,21 @@ const PatientDashboard = () => {
     setFullscreenMedia(null);
   };
 
+  // Filter doctors based on search term
+  const filteredDoctors = doctors.filter(
+    (doctor) =>
+      doctor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doctor.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doctor.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Calculate current records for pagination
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = doctors.slice(indexOfFirstRecord, indexOfLastRecord);
-  console.log("Current records:", currentRecords);
+  const currentRecords = filteredDoctors.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
 
   // Calculate current treatments for pagination
   const treatmentsIndexOfLastRecord = treatmentsCurrentPage * recordsPerPage;

@@ -54,6 +54,13 @@ const AdminDashboard = () => {
   });
   const recordsPerPage = 15;
 
+  // Function to sort patients by name in ascending order
+  const sortPatientsByName = (patients) => {
+    console.log(patients, "patients");
+    let value = patients.sort((a, b) => b.id - a.id);
+    return value;
+  };
+
   // New states for mobile responsiveness
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Function to change language
@@ -134,8 +141,8 @@ const AdminDashboard = () => {
         const approvedList = await adminService.getApprovePatients();
         const nonApprovedList = await adminService.getNonApprovePatients();
         // console.log('Pending approvals:', approvedList);
-        setNonApprovedPatients(nonApprovedList);
-        setApprovedPatients(approvedList);
+        setNonApprovedPatients(sortPatientsByName(nonApprovedList));
+        setApprovedPatients(sortPatientsByName(approvedList));
         setPendingApprovals(pending);
       } catch (error) {
         console.error("Error fetching pending approvals:", error);
@@ -371,7 +378,9 @@ const AdminDashboard = () => {
       setPendingApprovals((prevPending) =>
         prevPending.filter((patient) => patient.id !== selectedPatient.id)
       );
-      setApprovedPatients((prevApproved) => [...prevApproved, selectedPatient]);
+      setApprovedPatients((prevApproved) =>
+        sortPatientsByName([...prevApproved, selectedPatient])
+      );
 
       // Refresh the count
       const TotalCount = await adminService.TotalPatientCount();
@@ -379,29 +388,6 @@ const AdminDashboard = () => {
 
       setShowApprovalModal(false);
       setSelectedPatient(null);
-    } catch (error) {
-      console.error("Error approving patient:", error);
-      setError("Failed to approve patient");
-    }
-  };
-  const handleApprove = async (patientId) => {
-    try {
-      await adminService.approveUser(patientId);
-
-      // Get the patient being approved
-      const approvedPatient = pendingApprovals.find(
-        (patient) => patient.id === patientId
-      );
-
-      // Remove from pending and add to approved
-      setPendingApprovals((prevPending) =>
-        prevPending.filter((patient) => patient.id !== patientId)
-      );
-      setApprovedPatients((prevApproved) => [...prevApproved, approvedPatient]);
-
-      // Refresh the count
-      const TotalCount = await adminService.TotalPatientCount();
-      setApproveAndDeclineCount(TotalCount);
     } catch (error) {
       console.error("Error approving patient:", error);
       setError("Failed to approve patient");
