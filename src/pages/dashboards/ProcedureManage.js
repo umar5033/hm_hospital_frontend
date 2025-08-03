@@ -9,7 +9,7 @@ import {
   faTrash,
   faTimes,
   faSave,
-  // faExpand,
+  faExpand,
   faPlus,
   faEye,
 } from "@fortawesome/free-solid-svg-icons";
@@ -70,7 +70,7 @@ const ProcedureManage = () => {
   const fetchProcedures = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getTreatmentById(treatment.id);
+      const response = await adminService.getTreatmentByProcedure(treatment.id);
       if (response && response.data) {
         // Transform the data to ensure media is always an array
         const transformedProcedures = response.data
@@ -207,7 +207,6 @@ const ProcedureManage = () => {
       // Append each media file individually
       if (formData.media && formData.media.length > 0) {
         formData.media.forEach((file) => {
-          console.log(file, "file");
           submitData.append("media", file);
         });
       }
@@ -236,6 +235,19 @@ const ProcedureManage = () => {
   const openFullscreenMedia = (media) => {
     setFullscreenMedia(media);
   };
+
+  const closeFullscreenMedia = () => {
+    setFullscreenMedia(null);
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape") closeFullscreenMedia();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [closeFullscreenMedia]);
+
   const filteredProcedures = procedures.filter(
     (procedure) =>
       procedure?.procedure_name
@@ -346,7 +358,7 @@ const ProcedureManage = () => {
                       {procedure.media.map((media, index) => (
                         <div
                           key={index}
-                          className="relative group cursor-pointer overflow-hidden rounded-lg"
+                          className="relative group cursor-pointer aspect-w-16 aspect-h-9"
                           onClick={() => openFullscreenMedia(media)}
                         >
                           {media.mediaType === "video/mp4" ? (
@@ -354,11 +366,11 @@ const ProcedureManage = () => {
                               <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-all"></div>
                               <FontAwesomeIcon
                                 icon={faFileVideo}
-                                className="absolute top-2 right-2 text-white text-xl z-10"
+                                className="absolute top-2 right-2 text-white text-base sm:text-xl z-10"
                               />
                               <video
                                 src={`${process.env.REACT_APP_API_URL}/uploads/videos/${media.mediaFilename}`}
-                                className="w-full h-32 object-cover rounded-lg transform group-hover:scale-105 transition-transform"
+                                className="w-full h-full object-cover rounded-lg transition-transform transform group-hover:scale-105"
                               />
                             </>
                           ) : (
@@ -375,6 +387,13 @@ const ProcedureManage = () => {
                               />
                             </>
                           )}
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
+                            {" "}
+                            <FontAwesomeIcon
+                              icon={faExpand}
+                              className="text-white opacity-0 group-hover:opacity-100 text-base sm:text-xl"
+                            />{" "}
+                          </div>{" "}
                         </div>
                       ))}
                     </div>
@@ -762,15 +781,15 @@ const ProcedureManage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
           <div className="relative max-w-5xl w-full max-h-[85vh] flex items-center justify-center">
             <button
-              onClick={() => setFullscreenMedia(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+              onClick={closeFullscreenMedia}
+              className="absolute top-2 right-2 text-white hover:text-gray-300 transition-colors z-10"
             >
-              <FontAwesomeIcon icon={faTimes} className="text-2xl" />
+              <FontAwesomeIcon icon={faTimes} className="text-xl sm:text-2xl" />
             </button>
             {fullscreenMedia.mediaType === "video/mp4" ? (
               <video
                 src={`${process.env.REACT_APP_API_URL}/uploads/videos/${fullscreenMedia.mediaFilename}`}
-                className="w-full h-auto max-h-[85vh] rounded-lg shadow-2xl"
+                className="w-full h-auto max-h-[85vh] rounded-lg shadow-2xl bg-black"
                 controls
                 autoPlay
               />
@@ -778,7 +797,7 @@ const ProcedureManage = () => {
               <img
                 src={`${process.env.REACT_APP_API_URL}/uploads/images/${fullscreenMedia.mediaFilename}`}
                 alt="Fullscreen view"
-                className="w-auto h-auto max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain"
+                className="w-auto h-auto max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl"
               />
             )}
           </div>

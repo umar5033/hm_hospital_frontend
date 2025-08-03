@@ -27,8 +27,6 @@ const OtpPage = () => {
     } else if (urlEmail) {
       setEmail(decodeURIComponent(urlEmail));
     }
-
-    console.log("Email retrieved:", stateEmail || urlEmail || "none");
   }, [location.state, searchParams]);
 
   const handleSubmit = async (e) => {

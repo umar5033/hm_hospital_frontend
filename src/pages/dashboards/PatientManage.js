@@ -5,6 +5,8 @@ import {
   faEye,
   faArrowLeft,
   faSave,
+  faChevronDown,
+  faChevronUp,
   faTimes,
   faSort,
   faSearch,
@@ -29,12 +31,33 @@ const PatientManage = () => {
     age: "",
     gender: "",
     updated_by: localStorage.getItem("user_id"),
-    treatment_id: "",
+    treatment_id: [],
     care_of: "",
   });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOption = (id) => {
+    setEditFormData((prev) => {
+      // Ensure treatment_id is an array, fallback to empty array if undefined
+      const selectedIds = Array.isArray(prev.treatment_id)
+        ? prev.treatment_id
+        : [];
+
+      // Check if id is already selected
+      const isSelected = selectedIds.includes(id);
+
+      // Add or remove id accordingly
+      const newSelected = isSelected
+        ? selectedIds.filter((item) => item !== id) // remove id
+        : [...selectedIds, id]; // add id
+
+      return { ...prev, treatment_id: newSelected };
+    });
+  };
+
   const recordsPerPage = 15;
 
   useEffect(() => {
@@ -98,7 +121,7 @@ const PatientManage = () => {
       age: patient.age || "",
       gender: patient.gender || "",
       updated_by: localStorage.getItem("user_id"),
-      treatment_id: patient.treatment_id || "",
+      treatment_id: patient.treatment_id || [],
       care_of: patient.care_of || patient.careOf || "",
     });
     setShowModal(true);
@@ -146,18 +169,31 @@ const PatientManage = () => {
       await adminService.updatePatient(currentPatient.id, editFormData);
 
       // Find the treatment details before updating the patients list
-      const selectedTreatment = treatmentData.find(
-        (t) => t.id === parseInt(editFormData.treatment_id)
-      );
+      let selectedTreatments = [];
+
+      // Check if it's an array (multi-select) or single value
+      if (Array.isArray(editFormData.treatment_id)) {
+        selectedTreatments = treatmentData.filter((t) =>
+          editFormData.treatment_id.includes(t.id)
+        );
+      } else {
+        const treatment = treatmentData.find(
+          (t) => t.id === parseInt(editFormData.treatment_id)
+        );
+        if (treatment) {
+          selectedTreatments.push(treatment);
+        }
+      }
 
       const updatedPatients = patients.map((patient) => {
         if (patient.id === currentPatient.id) {
           return {
             ...patient,
             ...editFormData,
-            treatment_name: selectedTreatment
-              ? selectedTreatment.treatment_name
-              : "N/A",
+            treatment_name:
+              selectedTreatments.length > 0
+                ? selectedTreatments.map((t) => t.treatment_name).join(", ")
+                : "N/A",
           };
         }
         return patient;
@@ -573,23 +609,73 @@ const PatientManage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-gray-700 mb-2 font-medium">
-                        Treatment Type<span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="treatment_id"
-                        value={editFormData.treatment_id}
-                        onChange={handleInputChange}
-                        required
-                        className="w-full border border-gray-300 px-4 py-3 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      <label
+                        htmlFor="treatment_id"
+                        className="block text-gray-700 font-medium text-gray-700 mb-2"
                       >
-                        <option value="">Select Treatment Type</option>
-                        {treatmentData.map((treatment) => (
-                          <option key={treatment.id} value={treatment.id}>
-                            {treatment.treatment_name}
-                          </option>
-                        ))}
-                      </select>
+                        {/* <FontAwesomeIcon
+                          icon={faPills}
+                          className="mr-2 text-blue-500"
+                        /> */}
+                        Treatment Type <span className="text-red-500">*</span>
+                      </label>
+
+                      <div className="relative w-full">
+                        <button
+                          type="button"
+                          onClick={() => setIsOpen(!isOpen)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-soft-blue-500"
+                        >
+                          <span className="truncate">
+                            {editFormData.treatment_id.length > 0
+                              ? treatmentData
+                                  .filter((item) =>
+                                    editFormData.treatment_id.includes(item.id)
+                                  )
+                                  .map((item) => item.treatment_name)
+                                  .join(", ")
+                              : "Select treatment type"}
+                          </span>
+
+                          <span className="text-black-700 flex-shrink-0">
+                            <FontAwesomeIcon
+                              icon={isOpen ? faChevronUp : faChevronDown}
+                              className="w-3"
+                            />
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="absolute mt-1 w-full max-h-60 overflow-auto border bg-white rounded-md z-10 shadow-sm">
+                            {treatmentData.map((data) => (
+                              <div
+                                key={data.id}
+                                onClick={() => toggleOption(data.id)}
+                                className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center ${
+                                  editFormData.treatment_id.includes(data.id)
+                                    ? "bg-gray-100"
+                                    : ""
+                                }`}
+                              >
+                                <span>{data.treatment_name}</span>
+                                {editFormData.treatment_id.includes(
+                                  data.id
+                                ) && (
+                                  <svg
+                                    className="w-4 h-4 text-blue-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div>

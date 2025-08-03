@@ -212,7 +212,7 @@ const TreatmentsManage = () => {
             filteredTreatments.map((treatment) => (
               <div
                 key={treatment.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer hover:shadow-lg"
                 onClick={() =>
                   navigate(`/admin/procedures/${treatment.id}`, {
                     state: { treatment },

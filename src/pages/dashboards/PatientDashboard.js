@@ -113,13 +113,11 @@ const PatientDashboard = () => {
                 const treatmentData = await adminService.getTreatmentById(
                   patientInfo.patientDetails_list.treatment_id
                 );
-                console.log("Treatment data received:", treatmentData);
                 if (
                   treatmentData?.data &&
                   Array.isArray(treatmentData.data) &&
                   treatmentData.data.length > 0
                 ) {
-                  console.log("Processing treatment data:", treatmentData.data);
                   // Map the procedure data
                   const procedures = treatmentData.data.map((item) => {
                     let parsedMedia = [];
@@ -134,6 +132,7 @@ const PatientDashboard = () => {
                     }
                     return {
                       id: item.id,
+                      treatment_name: item.treatment_name,
                       procedure_name: item.procedure_name,
                       description: item.description,
                       media: parsedMedia,
@@ -277,6 +276,31 @@ const PatientDashboard = () => {
     setFullscreenMedia(null);
   };
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape") closeFullscreenMedia();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [closeFullscreenMedia]);
+
+  //  check the doctor's availablity
+
+  const checkAvailability = (loginAt) => {
+    const now = new Date();
+    const selectedDate = new Date(loginAt);
+
+    const diffInMs = now - selectedDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+
+    // If logged in within the past 24 hours
+    if (diffInHours >= 0 && diffInHours <= 24) {
+      return "Available";
+    } else {
+      return "Unavailable";
+    }
+  };
+
   // Filter doctors based on search term
   const filteredDoctors = doctors.filter(
     (doctor) =>
@@ -297,13 +321,13 @@ const PatientDashboard = () => {
   const treatmentsIndexOfLastRecord = treatmentsCurrentPage * recordsPerPage;
   const treatmentsIndexOfFirstRecord =
     treatmentsIndexOfLastRecord - recordsPerPage;
-  const currentTreatments = treatments.slice(
-    treatmentsIndexOfFirstRecord,
-    treatmentsIndexOfLastRecord
-  );
+  // const currentTreatments = treatments.slice(
+  //   treatmentsIndexOfFirstRecord,
+  //   treatmentsIndexOfLastRecord
+  // );
 
   const totalPages = Math.ceil(doctors.length / recordsPerPage);
-  const treatmentsTotalPages = Math.ceil(treatments.length / recordsPerPage);
+  // const treatmentsTotalPages = Math.ceil(treatments.length / recordsPerPage);
 
   // const handleSendQuery = async () => {
   //   if (!queryText.trim()) {
@@ -405,8 +429,6 @@ const PatientDashboard = () => {
     if (!doctorId) return;
     try {
       const history = await patientService.getChatHistory(doctorId);
-      console.log("Fetched latest messages:", history);
-
       // detect new messages
       const currentUserId = localStorage.getItem("user_id");
       const newMsgs = history.filter(
@@ -487,6 +509,17 @@ const PatientDashboard = () => {
       clearInterval(intervalRef.current);
     };
   }, [activeTab]); // Runs whenever activeTab changes
+
+  // Group procedures by treatment_name
+  const groupedProcedures = procedures.reduce((acc, procedure) => {
+    if (!procedure.treatment_name) return acc; // skip if no treatment_name
+
+    if (!acc[procedure.treatment_name]) {
+      acc[procedure.treatment_name] = [];
+    }
+    acc[procedure.treatment_name].push(procedure);
+    return acc;
+  }, {});
 
   const renderContent = () => {
     if (loading) {
@@ -648,9 +681,13 @@ const PatientDashboard = () => {
                     <div className="flex items-center space-x-1 text-sm text-gray-500 mb-4">
                       <FontAwesomeIcon
                         icon={faCircle}
-                        className="text-green-400 text-xs"
+                        className={
+                          checkAvailability(doctor.login_at) === "Available"
+                            ? "text-green-400 text-xs"
+                            : "text-red-400 text-xs"
+                        }
                       />
-                      <span>Available</span>
+                      <span>{checkAvailability(doctor.login_at)}</span>
                     </div>{" "}
                     <button
                       onClick={() => {
@@ -1010,123 +1047,157 @@ const PatientDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {procedures
-                  .filter(
-                    (procedure) =>
-                      procedure?.procedure_name &&
-                      procedure.procedure_name.trim()
-                  )
-                  .map((procedure, index) => (
-                    <div
-                      key={procedure?.id || index}
-                      className="border rounded-lg overflow-hidden"
-                    >
-                      {/* Procedure header */}
-                      <button
-                        onClick={() => toggleProcedure(procedure.id)}
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between"
-                      >
-                        {" "}
-                        <span className="font-medium text-gray-700 text-sm sm:text-base">
-                          {procedure.procedure_name}
+              <div className="space-y-6">
+                {Object.entries(groupedProcedures).map(
+                  ([treatmentName, treatmentProcedures]) => (
+                    <div key={treatmentName} className="mb-6">
+                      <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-blue-500 pb-2">
+                        Your Treatment Based On:{" "}
+                        <span className="uppercase tracking-wide text-soft-blue-600">
+                          {treatmentName}
                         </span>
-                        <FontAwesomeIcon
-                          icon={
-                            expandedProcedure === procedure.id
-                              ? faChevronUp
-                              : faChevronDown
-                          }
-                          className="text-gray-500"
-                        />
-                      </button>
+                      </h2>
 
-                      {/* Expanded content */}
-                      {expandedProcedure === procedure.id && (
-                        <div className="p-3 sm:p-4">
-                          <p className="text-sm sm:text-base text-gray-600 mb-4">
-                            {procedure.description ||
-                              "No description available"}
-                          </p>
+                      <div className="space-y-4">
+                        {treatmentProcedures.map((procedure, index) => {
+                          const isExpanded = expandedProcedure === procedure.id;
 
-                          {/* Media grid */}
-                          {Array.isArray(procedure.media) &&
-                          procedure.media.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                              {procedure.media.map((value, mediaIndex) =>
-                                value?.mediaFilename && value?.mediaType ? (
-                                  <div
-                                    key={mediaIndex}
-                                    className="relative group cursor-pointer aspect-w-16 aspect-h-9"
-                                    onClick={() => {
-                                      const mediaUrl =
-                                        value.mediaType === "video/mp4"
-                                          ? `${process.env.REACT_APP_API_URL}/uploads/videos/${value.mediaFilename}`
-                                          : `${process.env.REACT_APP_API_URL}/uploads/images/${value.mediaFilename}`;
-                                      openFullscreenMedia({
-                                        url: mediaUrl,
-                                        type:
-                                          value.mediaType === "video/mp4"
-                                            ? "video"
-                                            : "image",
-                                      });
-                                    }}
-                                  >
-                                    {value.mediaType === "video/mp4" ? (
-                                      <>
-                                        <FontAwesomeIcon
-                                          icon={faFileVideo}
-                                          className="absolute top-2 right-2 text-white text-base sm:text-xl z-10"
-                                        />
-                                        <video
-                                          src={`${process.env.REACT_APP_API_URL}/uploads/videos/${value.mediaFilename}`}
-                                          className="w-full h-full object-cover rounded-lg transition-transform transform group-hover:scale-105"
-                                        />
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FontAwesomeIcon
-                                          icon={faImage}
-                                          className="absolute top-2 right-2 text-white text-base sm:text-xl z-10"
-                                        />
-                                        <img
-                                          src={`${process.env.REACT_APP_API_URL}/uploads/images/${value.mediaFilename}`}
-                                          alt={`${
-                                            procedure.procedure_name ||
-                                            "Procedure"
-                                          } procedure visualization ${
-                                            mediaIndex + 1
-                                          }`}
-                                          className="w-full h-full object-cover rounded-lg transition-transform transform group-hover:scale-105"
-                                        />
-                                      </>
-                                    )}
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
-                                      <FontAwesomeIcon
-                                        icon={faExpand}
-                                        className="text-white opacity-0 group-hover:opacity-100 text-base sm:text-xl"
-                                      />
+                          const handleMediaClick = (media) => {
+                            const baseUrl =
+                              process.env.REACT_APP_API_URL + "/uploads";
+                            const url =
+                              media.mediaType === "video/mp4"
+                                ? `${baseUrl}/videos/${media.mediaFilename}`
+                                : `${baseUrl}/images/${media.mediaFilename}`;
+
+                            openFullscreenMedia({
+                              url,
+                              type:
+                                media.mediaType === "video/mp4"
+                                  ? "video"
+                                  : "image",
+                            });
+                          };
+
+                          return (
+                            <div
+                              key={procedure?.id || index}
+                              className="border rounded-lg overflow-hidden"
+                            >
+                              <button
+                                onClick={() => toggleProcedure(procedure.id)}
+                                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between"
+                              >
+                                <span className="font-medium text-gray-700 text-sm sm:text-base">
+                                  {procedure.procedure_name}
+                                </span>
+                                <FontAwesomeIcon
+                                  icon={
+                                    isExpanded ? faChevronUp : faChevronDown
+                                  }
+                                  className="text-gray-500"
+                                />
+                              </button>
+
+                              {/* Expanded content same as before */}
+                              {isExpanded && (
+                                <div className="p-3 sm:p-4">
+                                  <p className="text-sm sm:text-base text-gray-600 mb-4">
+                                    {" "}
+                                    {procedure.description ||
+                                      "No description available"}{" "}
+                                  </p>
+                                  {/* Media grid */}{" "}
+                                  {Array.isArray(procedure.media) &&
+                                  procedure.media.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                                      {" "}
+                                      {procedure.media.map(
+                                        (mediaItem, mediaIndex) => {
+                                          if (
+                                            !mediaItem?.mediaFilename ||
+                                            !mediaItem?.mediaType
+                                          ) {
+                                            return (
+                                              <div
+                                                key={mediaIndex}
+                                                className="text-xs sm:text-sm text-red-400"
+                                              >
+                                                Invalid media item{" "}
+                                              </div>
+                                            );
+                                          }
+
+                                          const isVideo =
+                                            mediaItem.mediaType === "video/mp4";
+                                          const mediaSrc = isVideo
+                                            ? `${process.env.REACT_APP_API_URL}/uploads/videos/${mediaItem.mediaFilename}`
+                                            : `${process.env.REACT_APP_API_URL}/uploads/images/${mediaItem.mediaFilename}`;
+
+                                          const Icon = isVideo
+                                            ? faFileVideo
+                                            : faImage;
+
+                                          return (
+                                            <div
+                                              key={mediaIndex}
+                                              className="relative group cursor-pointer aspect-w-16 aspect-h-9"
+                                              onClick={() =>
+                                                handleMediaClick(mediaItem)
+                                              }
+                                            >
+                                              {" "}
+                                              <FontAwesomeIcon
+                                                icon={Icon}
+                                                className="absolute top-2 right-2 text-white text-base sm:text-xl z-10"
+                                              />{" "}
+                                              {isVideo ? (
+                                                <video
+                                                  src={mediaSrc}
+                                                  className="w-full h-full object-cover rounded-lg transition-transform transform group-hover:scale-105"
+                                                  muted
+                                                  controls={false}
+                                                  preload="metadata"
+                                                />
+                                              ) : (
+                                                <img
+                                                  src={mediaSrc}
+                                                  alt={`${
+                                                    procedure.procedure_name ||
+                                                    "Procedure"
+                                                  } procedure visualization ${
+                                                    mediaIndex + 1
+                                                  }`}
+                                                  className="w-full h-full object-cover rounded-lg transition-transform transform group-hover:scale-105"
+                                                />
+                                              )}{" "}
+                                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
+                                                {" "}
+                                                <FontAwesomeIcon
+                                                  icon={faExpand}
+                                                  className="text-white opacity-0 group-hover:opacity-100 text-base sm:text-xl"
+                                                />{" "}
+                                              </div>{" "}
+                                            </div>
+                                          );
+                                        }
+                                      )}{" "}
                                     </div>
-                                  </div>
-                                ) : (
-                                  <div
-                                    key={mediaIndex}
-                                    className="text-xs sm:text-sm text-red-400"
-                                  >
-                                    Invalid media item
-                                  </div>
-                                )
+                                  ) : (
+                                    <p className="text-sm sm:text-base text-gray-400 italic">
+                                      No media files attached for this
+                                      procedure.{" "}
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          ) : (
-                            <p className="text-sm sm:text-base text-gray-400 italic">
-                              No media files attached for this procedure.
-                            </p>
-                          )}
-                        </div>
-                      )}
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
+                  )
+                )}
               </div>
             )}
           </div>
@@ -1409,19 +1480,25 @@ const PatientDashboard = () => {
 
       {/* Fullscreen Media Viewer */}
       {fullscreenMedia && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 p-2 sm:p-4">
-          <div className="relative h-full flex flex-col items-center justify-center">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative max-w-5xl w-full max-h-[85vh] flex items-center justify-center">
+            {/* Close Button: always visible in the top right of frame */}
             <button
               onClick={closeFullscreenMedia}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2"
+              className="absolute top-2 right-2 text-white hover:text-gray-300 transition-colors z-10"
               aria-label="Close preview"
             >
               <FontAwesomeIcon icon={faTimes} className="text-xl sm:text-2xl" />
             </button>
+            {/* Media Content */}
             {fullscreenMedia.type === "video" ? (
               <video
                 src={fullscreenMedia.url}
-                className="w-full h-auto max-h-[90vh] rounded-lg"
+                className="w-full h-auto max-h-[85vh] rounded-lg shadow-2xl bg-black"
                 controls
                 autoPlay
                 playsInline
@@ -1430,7 +1507,7 @@ const PatientDashboard = () => {
               <img
                 src={fullscreenMedia.url}
                 alt="Fullscreen view"
-                className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg object-contain"
+                className="w-auto h-auto max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl"
               />
             )}
           </div>

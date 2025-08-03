@@ -215,6 +215,22 @@ class AdminService {
   }
 
   /**
+   * Get treatment details by ID including procedures
+   * @param {string} treatmentId - ID of the treatment to view
+   * @returns {Promise} - API response with treatment details and procedures
+   */
+  async getTreatmentByProcedure(treatmentId) {
+    try {
+      const response = await apiClient.get(
+        `/treatment/viewProcedure/${treatmentId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
    * Add a new treatment
    * @param {FormData} treatmentData - Treatment data including files
    * @returns {Promise} - API response

@@ -7,6 +7,8 @@ import {
   faCalendarAlt,
   faPills,
   faUserFriends,
+  faChevronDown,
+  faChevronUp,
   faLock,
   faEye,
   faEyeSlash,
@@ -23,7 +25,7 @@ const RegistrationPage = () => {
     age: "",
     gender: "",
     dob: "",
-    treatment_id: "",
+    treatment_id: [],
     care_of: "",
     password: "",
     confirmPassword: "",
@@ -36,6 +38,16 @@ const RegistrationPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [treatmentData, setTreatmentData] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOption = (id) => {
+    setFormData((prev) => ({
+      ...prev,
+      treatment_id: prev.treatment_id.includes(id)
+        ? prev.treatment_id.filter((item) => item !== id)
+        : [...prev.treatment_id, id],
+    }));
+  };
 
   useEffect(() => {
     // Fetch treatment data from the API
@@ -50,7 +62,6 @@ const RegistrationPage = () => {
     };
     fetchTreatmentData();
   }, []);
-  console.log(treatmentData, "treatmentData");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +99,7 @@ const RegistrationPage = () => {
     }
 
     // Treatment type validation - required
-    if (!formData.treatment_id.trim()) {
+    if (!formData.treatment_id || formData.treatment_id.length === 0) {
       tempErrors.treatment_id = "Treatment type is required";
     }
 
@@ -128,7 +139,6 @@ const RegistrationPage = () => {
           userType: "patient", // Default registration is for patients
           age: parseInt(formData.age),
         };
-        console.log(registrationData, "registrationData");
 
         // Remove confirmPassword as it's not needed for the API
         delete registrationData.confirmPassword;
@@ -250,14 +260,14 @@ const RegistrationPage = () => {
           </div>
 
           {/* Date of Birth Field */}
-          <div>
+          <div className="mb-4">
             <label
               htmlFor="dob"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-gray-700 mb-1 flex items-center"
             >
               <FontAwesomeIcon
                 icon={faCalendarAlt}
-                className="mr-2 text-soft-blue-500"
+                className="mr-2 text-blue-500 w-4 h-4"
               />
               Date of Birth
             </label>
@@ -267,10 +277,11 @@ const RegistrationPage = () => {
               name="dob"
               value={formData.dob}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-soft-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               placeholder="Your date of birth"
             />
           </div>
+
           {/* Age Field */}
           <div>
             <label
@@ -301,9 +312,9 @@ const RegistrationPage = () => {
           </div>
 
           {/* gender types*/}
-          <div>
+          <div className="relative">
             <label
-              htmlfor="gender"
+              htmlFor="gender"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               <FontAwesomeIcon
@@ -312,14 +323,15 @@ const RegistrationPage = () => {
               />
               Gender <span className="text-red-500">*</span>
             </label>
+
             <select
               id="gender"
               name="gender"
               value={formData.gender}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border ${
+              className={`appearance-none w-full px-3 py-2 border ${
                 errors.gender ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-soft-blue-500`}
+              } flex item-center rounded-md focus:outline-none focus:ring-2 focus:ring-soft-blue-500 pr-8`}
               required
             >
               <option>Select Gender</option>
@@ -327,37 +339,76 @@ const RegistrationPage = () => {
               <option value="female">Female</option>
               <option value="other">Other</option>
             </select>
+
+            <span className="absolute bottom-[-1px] right-3 -translate-y-1/2 text-black-700 pointer-events-none">
+              <FontAwesomeIcon icon={faChevronDown} className="w-3" />
+            </span>
           </div>
+
           {/* Treatment Type Field */}
           <div>
             <label
               htmlFor="treatment_id"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              <FontAwesomeIcon
-                icon={faPills}
-                className="mr-2 text-soft-blue-500"
-              />
+              <FontAwesomeIcon icon={faPills} className="mr-2 text-blue-500" />
               Treatment Type <span className="text-red-500">*</span>
             </label>
 
-            <select
-              // id="treatmentType"
-              name="treatment_id"
-              value={formData.treatment_id}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border  rounded-md focus:outline-none focus:ring-2 focus:ring-soft-blue-500`}
-              required
-            >
-              <option selected>Select treatment type</option>
-              {treatmentData.map((data, index) => (
-                <>
-                  <option key={index} value={data.id}>
-                    {data.treatment_name}
-                  </option>
-                </>
-              ))}
-            </select>
+            <div className="relative w-full">
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full px-3 py-2 border rounded-md bg-white flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-soft-blue-500"
+              >
+                <span className="truncate">
+                  {formData.treatment_id.length > 0
+                    ? treatmentData
+                        .filter((item) =>
+                          formData.treatment_id.includes(item.id)
+                        )
+                        .map((item) => item.treatment_name)
+                        .join(", ")
+                    : "Select treatment type"}
+                </span>
+
+                <span className="text-black-700 flex-shrink-0">
+                  <FontAwesomeIcon
+                    icon={isOpen ? faChevronUp : faChevronDown}
+                    className="w-3"
+                  />
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="absolute mt-1 w-full max-h-60 overflow-auto border bg-white rounded-md z-10 shadow-sm">
+                  {treatmentData.map((data) => (
+                    <div
+                      key={data.id}
+                      onClick={() => toggleOption(data.id)}
+                      className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center ${
+                        formData.treatment_id.includes(data.id)
+                          ? "bg-gray-100"
+                          : ""
+                      }`}
+                    >
+                      <span>{data.treatment_name}</span>
+                      {formData.treatment_id.includes(data.id) && (
+                        <svg
+                          className="w-4 h-4 text-blue-500"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Care Of Field */}

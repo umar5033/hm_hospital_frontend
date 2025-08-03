@@ -34,15 +34,14 @@ const PassReset = () => {
     setEmail(stateEmail || (urlEmail ? decodeURIComponent(urlEmail) : ""));
     setVerified(stateVerified || urlVerified);
 
-    console.log("Password reset page data1:", {
-      email: stateEmail || urlEmail || "none",
-      verified: stateVerified || urlVerified || false,
-    });
+    // console.log("Password reset page data1:", {
+    //   email: stateEmail || urlEmail || "none",
+    //   verified: stateVerified || urlVerified || false,
+    // });
   }, [location.state, searchParams]);
   useEffect(() => {
     // Log for debugging purposes
-    console.log("Password reset page state2:", { email, verified });
-
+    // console.log("Password reset page state2:", { email, verified });
     // No immediate redirect, we'll show a message instead
   }, [email, verified, navigate]);
 
