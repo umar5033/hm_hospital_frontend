@@ -39,7 +39,7 @@ class AdminService {
       if (userType === "admin") {
         const response = await apiClient.put(
           `/auth/api/patient_approval/${patientId}`,
-          { approved_by }
+          { approved_by },
         );
         return response.data;
       }
@@ -67,7 +67,7 @@ class AdminService {
     try {
       const response = await apiClient.post(
         `/auth/api/patient_decline/${userId}`,
-        decline_userData
+        decline_userData,
       );
       return response.data;
     } catch (error) {
@@ -83,7 +83,7 @@ class AdminService {
     let currentUser = localStorage.getItem("user_id");
     try {
       const response = await apiClient.get(
-        `/doctor/doctor_list/${currentUser}`
+        `/doctor/doctor_list/${currentUser}`,
       );
       return response.data.data;
     } catch (error) {
@@ -99,7 +99,7 @@ class AdminService {
     let currentUser = localStorage.getItem("user_id");
     try {
       const response = await apiClient.get(
-        `/patient/approved_patient_list/${currentUser}`
+        `/patient/approved_patient_list/${currentUser}`,
       );
       return response.data.data;
     } catch (error) {
@@ -129,7 +129,7 @@ class AdminService {
     try {
       const response = await apiClient.post(
         "/auth/api/doctor_register",
-        doctorData
+        doctorData,
       );
       return response.data;
     } catch (error) {
@@ -147,7 +147,7 @@ class AdminService {
     try {
       const response = await apiClient.put(
         `/doctor/update/${doctorId}`,
-        doctorData
+        doctorData,
       );
       return response.data;
     } catch (error) {
@@ -165,7 +165,7 @@ class AdminService {
     try {
       const response = await apiClient.put(
         `/patient/update/${patientId}`,
-        patientData
+        patientData,
       );
       return response.data;
     } catch (error) {
@@ -181,6 +181,20 @@ class AdminService {
   async deleteDoctor(doctorId) {
     try {
       const response = await apiClient.delete(`/doctor/delete/${doctorId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Delete a patient from the system
+   * @param {String} patientId - ID of the patient to delete
+   * @returns {Promise} - API response
+   */
+  async deletePatient(patientId) {
+    try {
+      const response = await apiClient.delete(`/patient/delete/${patientId}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -222,7 +236,7 @@ class AdminService {
   async getTreatmentByProcedure(treatmentId) {
     try {
       const response = await apiClient.get(
-        `/treatment/viewProcedure/${treatmentId}`
+        `/treatment/viewProcedure/${treatmentId}`,
       );
       return response.data;
     } catch (error) {
@@ -244,7 +258,7 @@ class AdminService {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -267,7 +281,7 @@ class AdminService {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -283,7 +297,7 @@ class AdminService {
   async deleteTreatment(treatmentId) {
     try {
       const response = await apiClient.delete(
-        `/treatment/delete/${treatmentId}`
+        `/treatment/delete/${treatmentId}`,
       );
       return response.data;
     } catch (error) {
@@ -305,7 +319,7 @@ class AdminService {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -328,7 +342,7 @@ class AdminService {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -343,7 +357,7 @@ class AdminService {
   async deleteProcedure(procedureId) {
     try {
       const response = await apiClient.delete(
-        `/treatment/procedure/delete/${procedureId}`
+        `/treatment/procedure/delete/${procedureId}`,
       );
       return response.data;
     } catch (error) {

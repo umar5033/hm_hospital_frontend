@@ -10,6 +10,8 @@ import {
   faTimes,
   faSort,
   faSearch,
+  faTrash,
+  faBolt,
 } from "@fortawesome/free-solid-svg-icons";
 import adminService from "../../services/adminService";
 import authService from "../../services/authService";
@@ -108,7 +110,7 @@ const PatientManage = () => {
     (patient) =>
       patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.mobile?.includes(searchTerm)
+      patient.mobile?.includes(searchTerm),
   );
 
   const handleOpenEditModal = (patient) => {
@@ -174,11 +176,11 @@ const PatientManage = () => {
       // Check if it's an array (multi-select) or single value
       if (Array.isArray(editFormData.treatment_id)) {
         selectedTreatments = treatmentData.filter((t) =>
-          editFormData.treatment_id.includes(t.id)
+          editFormData.treatment_id.includes(t.id),
         );
       } else {
         const treatment = treatmentData.find(
-          (t) => t.id === parseInt(editFormData.treatment_id)
+          (t) => t.id === parseInt(editFormData.treatment_id),
         );
         if (treatment) {
           selectedTreatments.push(treatment);
@@ -207,12 +209,34 @@ const PatientManage = () => {
     }
   };
 
+  // Delete Patient
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const handleDeleteClick = (patient) => {
+    setPatientToDelete(patient);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!patientToDelete) return;
+    try {
+      await adminService.deletePatient(patientToDelete.id);
+      // console.log('Patient deleted:', patientToDelete.id);
+      await fetchPatients();
+      setShowDeleteModal(false);
+      setPatientToDelete(null);
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      setError("Failed to delete patient. Please try again.");
+    }
+  };
+
   // Pagination calculations
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredPatients.slice(
     indexOfFirstRecord,
-    indexOfLastRecord
+    indexOfLastRecord,
   );
   const totalPages = Math.ceil(filteredPatients.length / recordsPerPage);
 
@@ -372,8 +396,8 @@ const PatientManage = () => {
                                 patient.gender === "male"
                                   ? "bg-blue-100 text-blue-800"
                                   : patient.gender === "female"
-                                  ? "bg-pink-100 text-pink-800"
-                                  : "bg-gray-100 text-gray-800"
+                                    ? "bg-pink-100 text-pink-800"
+                                    : "bg-gray-100 text-gray-800"
                               } text-xs font-semibold`}
                             >
                               {patient.gender || "N/A"}
@@ -393,6 +417,13 @@ const PatientManage = () => {
                                 className="p-2 bg-soft-blue-50 text-soft-blue-600 rounded-full hover:bg-soft-blue-100 transition-colors duration-200"
                               >
                                 <FontAwesomeIcon icon={faEdit} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(patient)}
+                                title="Delete Patient"
+                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
                               </button>
                             </div>
                           </td>
@@ -459,7 +490,7 @@ const PatientManage = () => {
                           >
                             {number}
                           </button>
-                        )
+                        ),
                       )}
                     </div>
 
@@ -630,7 +661,7 @@ const PatientManage = () => {
                             {editFormData.treatment_id.length > 0
                               ? treatmentData
                                   .filter((item) =>
-                                    editFormData.treatment_id.includes(item.id)
+                                    editFormData.treatment_id.includes(item.id),
                                   )
                                   .map((item) => item.treatment_name)
                                   .join(", ")
@@ -659,7 +690,7 @@ const PatientManage = () => {
                               >
                                 <span>{data.treatment_name}</span>
                                 {editFormData.treatment_id.includes(
-                                  data.id
+                                  data.id,
                                 ) && (
                                   <svg
                                     className="w-4 h-4 text-blue-500"
@@ -710,6 +741,83 @@ const PatientManage = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && patientToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-red-600 p-4 sm:p-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg sm:text-xl font-bold text-white">
+                  Confirm Delete Patient
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setPatientToDelete(null);
+                  }}
+                  className="text-white hover:text-gray-200"
+                >
+                  <FontAwesomeIcon icon={faTimes} className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-red-50 p-4 rounded-lg mb-5 border border-red-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center shadow-sm">
+                    <FontAwesomeIcon
+                      icon={faTrash}
+                      className="text-red-600 text-lg"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-lg">
+                      {patientToDelete.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {patientToDelete.email}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {patientToDelete.age} years old
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 p-4 rounded-lg mb-5 border border-yellow-100 flex items-start">
+                <div className="text-yellow-600 mr-3 mt-0.5">
+                  <FontAwesomeIcon icon={faBolt} />
+                </div>
+                <p className="text-gray-700">
+                  Are you sure you want to delete this patient? This action{" "}
+                  <span className="font-bold">cannot be undone</span>. All
+                  associated data will be permanently removed.
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setPatientToDelete(null);
+                  }}
+                  className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors w-full sm:w-auto"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center w-full sm:w-auto mb-2 sm:mb-0"
+                >
+                  <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                  Confirm Delete
+                </button>
               </div>
             </div>
           </div>
